@@ -5,9 +5,7 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
-    // "ignoreDeprecations": "6.0", // Dihapus karena menyebabkan error TS5103
-    "esModuleInterop": true, // Direkomendasikan untuk interop modul yang lebih baik
-    // "allowSyntheticDefaultImports": true, // Implied by esModuleInterop: true
+    "esModuleInterop": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
