@@ -1,0 +1,37 @@
+/* Aturan ini hanya berlaku saat proses cetak/print berlangsung */
+@media print {
+    /* 1. Sembunyikan Enigma Sidebar & Header */
+    .sidebar,
+    .top-header,
+    .user-indicator {
+        display: none !important;
+    }
+
+    /* 2. Sembunyikan Semua Tombol Navigasi */
+    .button-group,
+    .btn-kembali,
+    .btn-batalkan,
+    .btn-main-print {
+        display: none !important;
+    }
+
+    /* 3. Atur Konten Faktur */
+    .detail-transaksi-content {
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Opsi: Tambahkan Header Toko di atas faktur saat dicetak */
+    .detail-transaksi-content::before {
+        content: "FAKTUR BARANG MASUK";
+        display: block;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+}
