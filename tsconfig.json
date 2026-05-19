@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
+    // "ignoreDeprecations": "6.0", // Dihapus karena menyebabkan error TS5103
+    "esModuleInterop": true, // Direkomendasikan untuk interop modul yang lebih baik
+    // "allowSyntheticDefaultImports": true, // Implied by esModuleInterop: true
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

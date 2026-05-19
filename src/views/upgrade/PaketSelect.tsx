@@ -64,16 +64,16 @@ const PaketSelect = ({ onClose }: { onClose?: () => void }) => {
         {/* Toggle Bulanan / Tahunan */}
         <div className="flex items-center justify-center mt-8 gap-2 bg-slate-100 w-fit mx-auto p-1.5 rounded-xl">
           <button 
-            onClick={() => setBillingCycle('monthly')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
-          >
-            Bulanan
-          </button>
-          <button 
             onClick={() => setBillingCycle('yearly')}
             className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${billingCycle === 'yearly' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
           >
             Tahunan <span className="ml-1 text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full">Hemat 20%</span>
+          </button>
+          <button 
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
+          >
+            Bulanan
           </button>
         </div>
       </div>
