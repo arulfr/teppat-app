@@ -58,7 +58,6 @@ import PengeluaranEdit from "@/views/ArusKas/PengeluaranEdit";
 import Mekanik from "@/views/Bengkel/Mekanik";
 import Layanan from "@/views/Bengkel/Layanan";
 import PaymentConfirmation from "@/views/upgrade/PaymentConfirmation";
-import { C } from "@fullcalendar/core/internal-common";
 import CustomerReceivableList from "@/views/Keuangan/CustomerReceivableList"; // Anda perlu membuat komponen ini
 import CustomerReceivablePayForm from "@/views/Keuangan/CustomerReceivablePayForm"; // Anda perlu membuat komponen ini
 import HutangSupplier from "@/views/Keuangan/HutangSupplier";
