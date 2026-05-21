@@ -4,6 +4,7 @@ import { RootState } from "./store";
 import axios from 'axios';
 import qs from 'qs';
 import axiosInstance from "@/utils/AxiosInstance";
+import { StoreCreate, StoreGetAction } from "./StoreSlice";
 
 const initialSupplier: Supplier[] = [];
 let supplierId !: Supplier;
@@ -190,6 +191,10 @@ const AdminSlice = createSlice({
         },
         setActiveStoreId(state, action: PayloadAction<string | null>) {
             state.activeStoreId = action.payload;
+            // Sinkronkan juga ke dalam objek isLogin untuk konsistensi data user
+            if (state.isLogin) {
+                state.isLogin.id_store = action.payload as any;
+            }
         },
         setChatOpen(state, action: PayloadAction<boolean>) {
             state.isChatOpen = action.payload;
@@ -229,6 +234,16 @@ const AdminSlice = createSlice({
         })
         .addCase(supplierDelete.fulfilled,(state,action:PayloadAction<string>)=>{
             state.supplier = state.supplier.filter(item=>item._id !== action.payload);
+        })
+        // Aturan #8: Sinkronisasi daftar toko ke AdminSlice agar tersedia global
+        .addCase(StoreCreate.fulfilled, (state, action) => {
+            if (state.isLogin) {
+                if (!state.isLogin.available_stores) state.isLogin.available_stores = [];
+                state.isLogin.available_stores.push(action.payload);
+            }
+        })
+        .addCase(StoreGetAction.fulfilled, (state, action) => {
+            if (state.isLogin) state.isLogin.available_stores = action.payload;
         })
         .addMatcher(
         (action) => action.type.endsWith('/pending'),

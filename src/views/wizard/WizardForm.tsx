@@ -3,7 +3,7 @@ import Button from "@/components/Base/Button";
 import { FormInput, FormLabel, FormSelect } from "@/components/Base/Form";
 import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { StoreCreate, StoreGetAction } from '@/stores/StoreSlice';
-import { UpdateUser } from '@/stores/AdminSlice';
+import { UpdateUser, setActiveStoreId } from '@/stores/AdminSlice';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Lucide from "@/components/Base/Lucide";
@@ -88,11 +88,26 @@ const WizardForm = () => {
         id_owner: owner._id as string
       };
 
-      await dispatch(StoreCreate(payload as any)).unwrap();
+      const result = await dispatch(StoreCreate(payload as any)).unwrap();
+      
+      // DEBUG & FIX: Ambil ID dari store yang baru saja dibuat
+      // Berdasarkan Aturan #7, response biasanya berupa {success, message, data} atau langsung data
+      const newStoreId = result?._id || result?.data?._id;
+
+      if (newStoreId) {
+        // 1. Perbarui state activeStoreId di AdminSlice (State Global)
+        // Ini akan menghilangkan error id_store=null pada request berikutnya
+        dispatch(setActiveStoreId(newStoreId));
+        
+        // 2. Refresh daftar toko untuk memastikan available_stores di Redux tersinkronisasi
+        // Ini memastikan id_store tersedia untuk query CRUD berikutnya
+        await dispatch(StoreGetAction()).unwrap();
+      }
+
       toast.success("Toko berhasil dikonfigurasi!");
       setStep(3); // Pindah ke layar finalisasi
     } catch (error: any) {
-      toast.error(error);
+      toast.error(error?.message || error || "Gagal mengkonfigurasi toko");
     }
   }
 
