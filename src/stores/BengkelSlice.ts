@@ -139,8 +139,12 @@ export const workOrderPost = createAsyncThunk("bengkel/workOrderPost", async (da
 export const workOrderUpdate = createAsyncThunk("bengkel/workOrderUpdate", async (data: any, thunkAPI) => {
     try {
         // Mengambil _id dari data dan sisanya sebagai payload update
+        const activeStoreId = (thunkAPI.getState() as RootState).AdminSlice.activeStoreId;
+        if (!activeStoreId) {
+          return thunkAPI.rejectWithValue("Pilih toko terlebih dahulu");
+        }
         const { _id, ...updateData } = data;
-        const response = await axiosInstance.put(`/work_order_update/${_id}`, updateData);
+        const response = await axiosInstance.put(`/work_order_update/${_id}`, { ...updateData, id_store: activeStoreId });
         return response.data;
     } catch (error: any) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Gagal memperbarui SPK");

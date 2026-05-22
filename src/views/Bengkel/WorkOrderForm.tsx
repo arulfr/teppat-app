@@ -194,6 +194,18 @@ const WorkOrderForm = () => {
     }]);
   };
 
+  const removeLayanan = (index: number) => {
+    const updated = [...selectedLayanan];
+    updated.splice(index, 1);
+    setSelectedLayanan(updated);
+  };
+
+  const removeSparepart = (index: number) => {
+    const updated = [...selectedSparepart];
+    updated.splice(index, 1);
+    setSelectedSparepart(updated);
+  };
+
   // --- Handlers for Quick Add (Memperbaiki error: handler missing) ---
 
   const handleQuickAddPelanggan = async (e: React.FormEvent) => {
@@ -546,10 +558,24 @@ const WorkOrderForm = () => {
                         </select>
                     </div>
                     <table className="w-full text-xs">
-                        <thead><tr className="border-b"><th>Jasa</th><th className="text-right">Total</th></tr></thead>
+                        <thead>
+                            <tr className="border-b">
+                                <th className="text-left">Jasa</th>
+                                <th className="text-right">Total</th>
+                                <th className="text-center w-8">#</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {selectedLayanan.map((l, i) => (
-                                <tr key={i}><td>{l.nama_layanan}</td><td className="text-right">{l.sub_total.toLocaleString()}</td></tr>
+                                <tr key={i} className="border-b last:border-b-0">
+                                    <td className="py-1">{l.nama_layanan}</td>
+                                    <td className="text-right">{l.sub_total.toLocaleString()}</td>
+                                    <td className="text-center">
+                                        <button type="button" onClick={() => removeLayanan(i)} className="text-danger hover:text-red-700">
+                                            <Lucide icon="Trash2" className="w-3 h-3" />
+                                        </button>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
@@ -568,13 +594,20 @@ const WorkOrderForm = () => {
                         </select>
                     </div>
                     <table className="w-full text-xs">
-                        <thead><tr className="border-b"><th>Part</th><th className="text-center">Qty</th><th className="text-right">Total</th></tr></thead>
+                        <thead>
+                            <tr className="border-b">
+                                <th className="text-left">Part</th>
+                                <th className="text-center">Qty</th>
+                                <th className="text-right">Total</th>
+                                <th className="text-center w-8">#</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {selectedSparepart.map((s, i) => (
-                                <tr key={i}>
-                                    <td>{s.nama_barang}</td>
-                                    <td className="text-center">
-                                        <input type="number" className="w-10 border text-center" value={s.jumlah} onChange={(e) => {
+                                <tr key={i} className="border-b last:border-b-0">
+                                    <td className="py-1">{s.nama_barang}</td>
+                                    <td className="text-center w-20">
+                                        <input type="number" className="w-16 border text-center rounded-sm" value={s.jumlah} onChange={(e) => {
                                             const val = parseInt(e.target.value) || 1;
                                             const updated = [...selectedSparepart];
                                             updated[i].jumlah = val;
@@ -583,6 +616,11 @@ const WorkOrderForm = () => {
                                         }} />
                                     </td>
                                     <td className="text-right">{s.sub_total.toLocaleString()}</td>
+                                    <td className="text-center">
+                                        <button type="button" onClick={() => removeSparepart(i)} className="text-danger hover:text-red-700">
+                                            <Lucide icon="Trash2" className="w-3 h-3" />
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
