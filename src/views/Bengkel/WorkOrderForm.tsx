@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import Button from "@/components/Base/Button";
 import { FormInput, FormLabel, FormTextarea } from "@/components/Base/Form";
 import Lucide from "@/components/Base/Lucide";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
-import { fetchMekaniks, workOrderPost, fetchVehicles, kendaraanPost } from "@/stores/BengkelSlice";
-import { fetchLayanan } from "@/stores/LayananSlice";
+import { fetchMekaniks, workOrderPost, fetchVehicles, kendaraanPost, mekanikPost } from "@/stores/BengkelSlice";
+import { fetchLayanan, layananPost } from "@/stores/LayananSlice";
 import { getBarangList } from "@/stores/BarangSlice";
-import { pelangganGet } from "@/stores/PelangganSlice";
+import { KategoriGet, SupplierGet } from "@/stores/AdminSlice";
+import { pelangganGet, pelangganPost } from "@/stores/PelangganSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ILayanan } from "@/utils/types";
@@ -44,13 +45,24 @@ const WorkOrderForm = () => {
   const { mekanik, loading } = useAppSelector((state) => state.BengkelSlice);
   const { layanan } = useAppSelector((state) => state.LayananSlice);
   const { BarangList } = useAppSelector((state) => state.BarangSlice);
+  const { kategori, supplier, activeStoreId } = useAppSelector((state) => state.AdminSlice);
   const { pelanggan } = useAppSelector((state) => state.PelangganSlice);
-  const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
 
   const [activeTab, setActiveTab] = useState<"kendaraan" | "penugasan" | "items" | "tindakan">("kendaraan");
   const [suggestedVehicles, setSuggestedVehicles] = useState<any[]>([]);
   const [selectedLayanan, setSelectedLayanan] = useState<any[]>([]);
   const [selectedSparepart, setSelectedSparepart] = useState<any[]>([]);
+
+  // Ref untuk mengontrol agar pencarian plat nomor tidak loop setelah dipilih
+  const isAutoFilling = useRef(false);
+
+  // State untuk Modal Quick Add (Memperbaiki error: Cannot find name 'setModalOpen')
+  const [modalOpen, setModalOpen] = useState<{ 
+    pelanggan: boolean; 
+    mekanik: boolean; 
+    layanan: boolean; 
+    barang: boolean; 
+  }>({ pelanggan: false, mekanik: false, layanan: false, barang: false });
   
   const methods = useForm<WorkOrderFields>({
     defaultValues: {
@@ -89,20 +101,31 @@ const WorkOrderForm = () => {
     dispatch(pelangganGet());
     dispatch(fetchLayanan());
     dispatch(getBarangList());
+    dispatch(KategoriGet()); 
+    dispatch(SupplierGet()); // Fetch supplier untuk kebutuhan Quick Add Barang
   }, [dispatch]);
 
   // Otomatisasi Pencarian Plat Nomor
   useEffect(() => {
-    if (plat_nomor && plat_nomor.length >= 4) {
+    if (plat_nomor && plat_nomor.length >= 2) {
+      // BUG FIX 1: Jangan cari jika sedang dalam proses auto-fill setelah pemilihan
+      if (isAutoFilling.current) {
+        isAutoFilling.current = false;
+        return;
+      }
+
       // Clear previous suggestions immediately when typing
       setSuggestedVehicles([]);
       const delayDebounceFn = setTimeout(async () => {
         try {
-          const result: any = await dispatch(fetchVehicles({ plat_nomor: plat_nomor.toUpperCase() })).unwrap();
+          // FIX: Sertakan id_store sesuai Aturan #3 untuk menghindari 500 Error
+          const result: any = await dispatch(fetchVehicles({ 
+            plat_nomor: plat_nomor.toUpperCase(),
+            id_store: activeStoreId 
+          })).unwrap();
           
           if (result && result.length > 0) {
             setSuggestedVehicles(result);
-            toast.info(`Ditemukan ${result.length} kendaraan.`);
           } else {
             setSuggestedVehicles([]);
             // Clear auto-filled fields if no vehicle found (allow new entry)
@@ -118,7 +141,7 @@ const WorkOrderForm = () => {
           console.error("Search plate error", error);
           setSuggestedVehicles([]);
         }
-      }, 1000);
+      }, 400);
 
       return () => clearTimeout(delayDebounceFn);
     } else {
@@ -127,6 +150,9 @@ const WorkOrderForm = () => {
   }, [plat_nomor, dispatch, methods]);
 
   const handleSelectVehicle = (v: any) => {
+    // BUG FIX 1: Tandai sedang auto-fill agar useEffect tidak trigger search lagi
+    isAutoFilling.current = true;
+
     // Auto-fill form
     methods.setValue("plat_nomor", v.plat_nomor); // Set plat nomor yang dipilih
     methods.setValue("merk", v.merk);
@@ -168,8 +194,99 @@ const WorkOrderForm = () => {
     }]);
   };
 
+  // --- Handlers for Quick Add (Memperbaiki error: handler missing) ---
+
+  const handleQuickAddPelanggan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const payload = {
+      nama_pelanggan: formData.get("nama") as string,
+      no_telp: formData.get("no_telp") as string,
+      tipe_pelanggan: "perorangan",
+      id_store: activeStoreId || undefined
+    } as any;
+
+    try {
+      const res = await dispatch(pelangganPost(payload)).unwrap();
+      const newId = (res as any)?._id || (res as any)?.data?._id;
+      await dispatch(pelangganGet());
+      methods.setValue("id_pelanggan", newId);
+      setModalOpen({ ...modalOpen, pelanggan: false });
+      toast.success("Pelanggan baru ditambahkan");
+    } catch (err: any) { toast.error(err || "Gagal menambah pelanggan"); }
+  };
+
+  const handleQuickAddMekanik = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const payload = {
+      nama_mekanik: formData.get("nama") as string,
+      spesialisasi: formData.get("spesialisasi") as string,
+      no_telepon: formData.get("no_telp") as string,
+      id_store: activeStoreId || undefined
+    };
+
+    try {
+      const res = await dispatch(mekanikPost(payload)).unwrap();
+      const newId = res?._id || res?.data?._id;
+      await dispatch(fetchMekaniks());
+      methods.setValue("id_mekanik_utama", newId);
+      setModalOpen({ ...modalOpen, mekanik: false });
+      toast.success("Mekanik baru ditambahkan");
+    } catch (err: any) { toast.error(err || "Gagal menambah mekanik"); }
+  };
+
+  const handleQuickAddLayanan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const payload = {
+      nama_layanan: formData.get("nama") as string,
+      harga: Number(formData.get("harga")),
+      id_store: activeStoreId || undefined
+    } as any;
+
+    try {
+      const res = await dispatch(layananPost(payload)).unwrap();
+      const newItem = (res as any)?.data || res;
+      await dispatch(fetchLayanan());
+      addLayanan(newItem);
+      setModalOpen({ ...modalOpen, layanan: false });
+      toast.success("Layanan baru ditambahkan");
+    } catch (err: any) { toast.error(err || "Gagal menambah layanan"); }
+  };
+
+  // Komponen Modal Lokal (Memperbaiki error: Cannot find name 'QuickAddModal')
+  const QuickAddModal = ({ title, isOpen, onClose, onSubmit, children }: any) => {
+    if (!isOpen) return null;
+    return (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+          <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
+            <h3 className="font-bold text-slate-700">{title}</h3>
+            <button type="button" onClick={onClose}><Lucide icon="X" className="w-5 h-5 text-slate-400" /></button>
+          </div>
+          <form onSubmit={onSubmit} className="p-5 space-y-4">
+            {children}
+            <div className="flex gap-2 pt-4">
+              <Button type="button" variant="secondary" className="w-full" onClick={onClose}>Batal</Button>
+              <Button type="submit" variant="primary" className="w-full">Simpan</Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   const onSubmit = async (data: WorkOrderFields) => {
     try {
+        if (!activeStoreId) {
+            toast.error("Toko aktif tidak terdeteksi. Silakan pilih toko terlebih dahulu.");
+            return;
+        }
+
         if (!data.id_pelanggan) {
             toast.error("Pelanggan belum dipilih.");
             return;
@@ -184,13 +301,20 @@ const WorkOrderForm = () => {
                 plat_nomor: data.plat_nomor.toUpperCase(),
                 merk: data.merk,
                 model: data.model,
-                tahun: data.tahun,
+                // FIX: Konversi ke Number untuk menghindari validasi error di backend
+                tahun: Number(data.tahun),
                 nomor_rangka: data.nomor_rangka,
                 nomor_mesin: data.nomor_mesin,
-                odometer: data.odometer,
+                odometer: Number(data.odometer),
                 id_store: activeStoreId
             })).unwrap();
-            kendaraanId = newVeh._id;
+            
+            // FIX: Defensive programming untuk mengambil ID dari response yang terbungkus .data (Aturan #7 & #8)
+            kendaraanId = newVeh?._id || newVeh?.data?._id;
+        }
+
+        if (!kendaraanId) {
+            throw new Error("Gagal mengidentifikasi kendaraan. Silakan periksa kembali data kendaraan.");
         }
 
         const total_biaya_jasa = selectedLayanan.reduce((a, b) => a + b.sub_total, 0);
@@ -198,19 +322,20 @@ const WorkOrderForm = () => {
 
         const finalData = { 
             ...data, 
+            id_store: activeStoreId, // FIX: Wajib menyertakan id_store (Aturan #3)
             id_kendaraan: kendaraanId,
             plat_nomor: data.plat_nomor.toUpperCase(),
             item_layanan: selectedLayanan.map(l => ({
-                id_layanan: l._id,
+                id_layanan: l.id_layanan || l._id,
                 nama_layanan: l.nama_layanan,
                 jumlah: l.jumlah,
                 harga_satuan: l.harga_satuan,
                 sub_total: l.sub_total
             })),
             item_sparepart: selectedSparepart,
-            total_biaya_jasa,
-            total_biaya_sparepart,
-            total_tagihan: total_biaya_jasa + total_biaya_sparepart
+            total_biaya_jasa: Number(total_biaya_jasa),
+            total_biaya_sparepart: Number(total_biaya_sparepart),
+            total_tagihan: Number(total_biaya_jasa + total_biaya_sparepart)
         };
         await dispatch(workOrderPost(finalData)).unwrap();
         toast.success("SPK Berhasil dibuat");
@@ -293,7 +418,19 @@ const WorkOrderForm = () => {
                 />
               </div>
               <div className="col-span-12">
-                <FormLabel>Pemilik / Pelanggan</FormLabel>
+                <div className="flex justify-between items-center mb-2">
+                    <FormLabel className="mb-0">Pemilik / Pelanggan</FormLabel>
+                    <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline-primary" 
+                        onClick={() => setModalOpen({...modalOpen, pelanggan: true})} 
+                        title="Quick Add"
+                        className="px-3 py-1 h-auto text-[10px] shadow-sm font-bold"
+                    >
+                        <Lucide icon="Plus" className="w-3 h-3 mr-1" /> Tambah Baru
+                    </Button>
+                </div>
                 <select 
                     {...methods.register("id_pelanggan", { required: true })}
                     className="form-control w-full p-2 border rounded-md"
@@ -351,7 +488,19 @@ const WorkOrderForm = () => {
           {activeTab === "penugasan" && (
             <div className="animate-fade-in space-y-4">
               <div>
-                <FormLabel>Mekanik Utama</FormLabel>
+                <div className="flex justify-between items-center mb-2">
+                    <FormLabel className="mb-0">Mekanik Utama</FormLabel>
+                    <Button 
+                        type="button" 
+                        size="sm" 
+                        variant="outline-primary" 
+                        onClick={() => setModalOpen({...modalOpen, mekanik: true})} 
+                        title="Quick Add"
+                        className="px-3 py-1 h-auto text-[10px] shadow-sm font-bold"
+                    >
+                        <Lucide icon="Plus" className="w-3 h-3 mr-1" /> Tambah Baru
+                    </Button>
+                </div>
                 <select 
                     {...methods.register("id_mekanik_utama")}
                     className="form-control w-full p-2 border rounded-md"
@@ -375,7 +524,18 @@ const WorkOrderForm = () => {
             <div className="animate-fade-in space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="border p-3 rounded-md">
-                    <FormLabel>Pilih Jasa / Layanan</FormLabel>
+                    <div className="flex justify-between items-center mb-2">
+                        <FormLabel className="mb-0">Pilih Jasa / Layanan</FormLabel>
+                        <Button 
+                            type="button" 
+                            variant="primary" 
+                            className="w-7 h-7 p-0 flex items-center justify-center rounded-full shadow-md"
+                            title="Quick Add"
+                            onClick={() => setModalOpen({...modalOpen, layanan: true})}
+                        >
+                            <Lucide icon="Plus" className="w-4 h-4"/>
+                        </Button>
+                    </div>
                     <div className="flex gap-2 mb-2">
                         <select className="form-control text-sm" value="" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                             const l = layanan.find((item: ILayanan) => item._id === e.target.value);
@@ -395,7 +555,9 @@ const WorkOrderForm = () => {
                     </table>
                 </div>
                 <div className="border p-3 rounded-md">
-                    <FormLabel>Pilih Sparepart</FormLabel>
+                    <div className="flex justify-between items-center mb-2">
+                        <FormLabel className="mb-0">Pilih Sparepart</FormLabel>
+                    </div>
                     <div className="flex gap-2 mb-2">
                         <select className="form-control text-sm" value="" onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                             const s = (BarangList as IBarang[]).find((item: IBarang) => item._id === e.target.value);
@@ -464,7 +626,7 @@ const WorkOrderForm = () => {
               Reset Form
             </Button>
             {activeTab !== "tindakan" ? (
-               <Button variant="primary" type="button" onClick={async () => {
+               <Button variant="primary" type="button" disabled={loading} onClick={async () => {
                    if (await validateTab(activeTab)) {
                       if (activeTab === 'kendaraan') setActiveTab('penugasan');
                       else if (activeTab === 'penugasan') setActiveTab('items');
@@ -474,13 +636,31 @@ const WorkOrderForm = () => {
                  Lanjut <Lucide icon="ChevronRight" className="w-4 h-4 ml-2" />
                </Button>
             ) : (
-              <Button variant="success" type="submit" className="text-white">
-                <Lucide icon="Save" className="w-4 h-4 mr-2" /> Simpan Work Order
+              <Button variant="success" type="submit" className="text-white" disabled={loading}>
+                {loading ? <Lucide icon="RefreshCw" className="w-4 h-4 mr-2 animate-spin" /> : <Lucide icon="Save" className="w-4 h-4 mr-2" />}
+                {loading ? "Sedang Menyimpan..." : "Simpan Work Order"}
               </Button>
             )}
           </div>
         </form>
       </FormProvider>
+
+      {/* MODALS QUICK ADD */}
+      <QuickAddModal title="Tambah Pelanggan Baru" isOpen={modalOpen.pelanggan} onClose={() => setModalOpen({...modalOpen, pelanggan: false})} onSubmit={handleQuickAddPelanggan}>
+        <div><FormLabel>Nama Lengkap</FormLabel><FormInput name="nama" required placeholder="Contoh: Budi Sudarsono" /></div>
+        <div><FormLabel>No. Telepon / WA</FormLabel><FormInput name="no_telp" required placeholder="0812xxxx" /></div>
+      </QuickAddModal>
+
+      <QuickAddModal title="Tambah Mekanik Baru" isOpen={modalOpen.mekanik} onClose={() => setModalOpen({...modalOpen, mekanik: false})} onSubmit={handleQuickAddMekanik}>
+        <div><FormLabel>Nama Mekanik</FormLabel><FormInput name="nama" required /></div>
+        <div><FormLabel>Spesialisasi</FormLabel><FormInput name="spesialisasi" placeholder="Contoh: Mesin / Kelistrikan" /></div>
+        <div><FormLabel>No. Telepon</FormLabel><FormInput name="no_telp" /></div>
+      </QuickAddModal>
+
+      <QuickAddModal title="Tambah Jasa Baru" isOpen={modalOpen.layanan} onClose={() => setModalOpen({...modalOpen, layanan: false})} onSubmit={handleQuickAddLayanan}>
+        <div><FormLabel>Nama Layanan</FormLabel><FormInput name="nama" required placeholder="Contoh: Ganti Oli Mesin" /></div>
+        <div><FormLabel>Harga Jasa (Rp)</FormLabel><FormInput name="harga" type="number" required /></div>
+      </QuickAddModal>
     </div>
   );
 };

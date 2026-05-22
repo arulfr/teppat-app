@@ -15,10 +15,10 @@ interface BengkelState {
 // Thunk untuk menyelesaikan Work Order (Potong Stok & Update Status)
 export const completeWorkOrder = createAsyncThunk(
   "bengkel/completeWorkOrder",
-  async (id: string, { rejectWithValue }) => {
+  async ({id,id_store}:{ id: string,id_store:string }, { rejectWithValue }) => {
     try {
       // Menyesuaikan dengan router: /work_order_status/:id
-      const response = await axiosInstance.put(`/work_order_status/${id}`, { status: 'done' });
+      const response = await axiosInstance.put(`/work_order_status/${id}`, { status: 'done', id_store });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response.data.message);
@@ -29,9 +29,9 @@ export const completeWorkOrder = createAsyncThunk(
 // Thunk untuk update status Work Order (misal dari pending ke on_progress)
 export const updateWorkOrderStatus = createAsyncThunk(
     "bengkel/updateWorkOrderStatus",
-    async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
+    async ({ id, status, id_store }: { id: string; status: string, id_store:string }, { rejectWithValue }) => {
       try {
-        const response = await axiosInstance.put(`/work_order_status/${id}`, { status });
+        const response = await axiosInstance.put(`/work_order_status/${id}`, { status, id_store });
         return response.data;
       } catch (error: any) {
         return rejectWithValue(error.response?.data?.message || "Gagal update status");

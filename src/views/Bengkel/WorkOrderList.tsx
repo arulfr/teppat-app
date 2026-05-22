@@ -62,24 +62,37 @@ const WorkOrderList = () => {
 
 // Contoh penyesuaian di WorkOrderList.tsx
 const handleComplete = async (id: string) => {
+   // Aturan #8: Gunakan fallback jika activeStoreId null (defensive programming)
+   const storeId = activeStoreId || isLogin?.id_store || (isLogin as any)?.data?.id_store;
+   
+   if (!storeId) return toast.error("ID Toko tidak ditemukan. Silakan muat ulang halaman.");
+
    if (window.confirm("Selesaikan pengerjaan? Stok sparepart akan dipotong otomatis.")) {
-       await dispatch(completeWorkOrder(id)).unwrap();
-       dispatch(fetchWorkOrders()); // Refresh list
+       await dispatch(completeWorkOrder({ id, id_store: storeId } as any)).unwrap();
+       dispatch(fetchWorkOrders()); 
    }
 };
 
 const handleStartWork = async (id: string) => {
+    const storeId = activeStoreId || isLogin?.id_store || (isLogin as any)?.data?.id_store;
+    if (!storeId) return toast.error("ID Toko tidak ditemukan.");
+
     if (window.confirm("Pindahkan kendaraan ke area pengerjaan (Mulai Kerja)?")) {
-        await dispatch(updateWorkOrderStatus({ id, status: 'on_progress' })).unwrap();
+        await dispatch(updateWorkOrderStatus({ id, status: 'on_progress', id_store: storeId } as any)).unwrap();
         toast.success("Status diperbarui: Sedang Dikerjakan");
+        dispatch(fetchWorkOrders()); // Tambahkan refresh list
     }
 };
 
 const handleCancel = async (id: string) => {
+    const storeId = activeStoreId || isLogin?.id_store || (isLogin as any)?.data?.id_store;
+    if (!storeId) return toast.error("ID Toko tidak ditemukan.");
+
     if (window.confirm("Apakah Anda yakin ingin membatalkan Work Order ini?")) {
         try {
-            await dispatch(updateWorkOrderStatus({ id, status: 'canceled' })).unwrap();
+            await dispatch(updateWorkOrderStatus({ id, status: 'canceled', id_store: storeId } as any)).unwrap();
             toast.success("Work Order telah dibatalkan");
+            dispatch(fetchWorkOrders()); // Tambahkan refresh list
         } catch (error: any) {
             toast.error(error || "Gagal membatalkan Work Order");
         }
