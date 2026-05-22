@@ -7,6 +7,7 @@ import { UpdateUser, setActiveStoreId } from '@/stores/AdminSlice';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Lucide from "@/components/Base/Lucide";
+import logo from "@/assets/images/Logo.png";
 
 const WizardForm = () => {
   const dispatch = useAppDispatch();
@@ -113,8 +114,8 @@ const WizardForm = () => {
 
   return (
     <>
-      <div className="flex items-center mt-8">
-        <h2 className="mr-auto text-lg font-medium intro-y">Wizard Layout</h2>
+      <div className="flex items-center justify-center mt-12 intro-y">
+        <img src={logo} alt="Teppat Logo" className="h-20 md:h-28" />
       </div>
       {/* BEGIN: Wizard Layout */}
       <div className="py-10 mt-5 intro-y box sm:py-20">
