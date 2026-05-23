@@ -71,11 +71,11 @@ function Router() {
       children: [
         {
           path: "/",
-          element: <Dashboard />,
+          element: <Authenticator><Dashboard /></Authenticator>,
         },
         {
           path: "/dashboard",
-          element: <Dashboard />,
+          element: <Authenticator><Dashboard /></Authenticator>,
         },
         {
           path: "/kategori_data",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Import useEffect
-import ThemeSwitcher from "@/components/ThemeSwitcher";
-import logoUrl from "@/assets/images/logo.svg";
+import logoUrl from "@/assets/images/Logo.png";
+import LogoTeppat from "@/assets/images/Logo_teppat.png";
 import illustrationUrl from "@/assets/images/illustration.svg";
 import { FormInput, FormCheck } from "@/components/Base/Form";
 import Button from "@/components/Base/Button";
@@ -123,31 +123,30 @@ const Login = () => {
               "after:hidden after:xl:block after:content-[''] after:w-[57%] after:-mt-[20%] after:-mb-[13%] after:-ml-[13%] after:absolute after:inset-y-0 after:left-0 after:transform after:rotate-[-4.5deg] after:bg-primary after:rounded-[100%] after:dark:bg-darkmode-700",
             ])}
           >
-            <ThemeSwitcher />
             <div className="container relative z-10 sm:px-10">
               <div className="block grid-cols-2 gap-4 xl:grid">
                 {/* BEGIN: Login Info */}
                 <div className="flex-col hidden min-h-screen xl:flex">
                   <a href="" className="flex items-center pt-5 -intro-x">
                     <img
-                      alt="Midone Tailwind HTML Admin Template"
-                      className="w-6"
-                      src={logoUrl}
+                      alt="Teppat POS Logo"
+                      className="w-12"
+                      src={LogoTeppat}
                     />
-                    <span className="ml-3 text-lg text-white"> Rubick </span>
+                    <span className="ml-3 text-2xl font-bold text-white uppercase tracking-wider"> TEPPAT </span>
                   </a>
                   <div className="my-auto">
                     <img
-                      alt="Midone Tailwind HTML Admin Template"
+                      alt="Teppat POS Illustration"
                       className="w-1/2 -mt-16 -intro-x"
                       src={illustrationUrl}
                     />
                     <div className="mt-10 text-4xl font-medium leading-tight text-white -intro-x">
-                      A few more clicks to <br />
-                      sign in to your account.
+                      Digitalisasi Bisnis <br />
+                      Jadi Lebih Tepat.
                     </div>
                     <div className="mt-5 text-lg text-white -intro-x text-opacity-70 dark:text-slate-400">
-                      Manage all your e-commerce accounts in one place
+                      Solusi Kasir Digital Terpadu untuk Bengkel, Apotek, dan Toko Retail.
                     </div>
                   </div>
                 </div>
@@ -155,12 +154,16 @@ const Login = () => {
                 {/* BEGIN: Login Form */}
                 <div className="flex h-screen py-5 my-10 xl:h-auto xl:py-0 xl:my-0">
                   <div className="w-full px-5 py-8 mx-auto my-auto bg-white rounded-md shadow-md xl:ml-20 dark:bg-darkmode-600 xl:bg-transparent sm:px-8 xl:p-0 xl:shadow-none sm:w-3/4 lg:w-2/4 xl:w-auto">
+                    <img
+                      alt="Teppat POS Logo"
+                      className="w-28 mx-auto mb-6 intro-x xl:mx-0"
+                      src={logoUrl}
+                    />
                     <h2 className="text-2xl font-bold text-center intro-x xl:text-3xl xl:text-left">
-                      Sign In
+                      Masuk ke Akun
                     </h2>
                     <div className="mt-2 text-center intro-x text-slate-400 xl:hidden">
-                      A few more clicks to sign in to your account. Manage all your
-                      e-commerce accounts in one place
+                      Kelola bisnis jadi lebih mudah & menyenangkan dengan Teppat POS Cloud.
                     </div>
                     <div className="mt-8 intro-x">
                       <FormInput
@@ -198,15 +201,16 @@ const Login = () => {
                       <Button
                         variant="primary"
                         onClick={() => loginHandle()}
-                        className="w-full px-4 py-3 align-top xl:w-32 xl:mr-3"
+                        className="w-full px-4 py-3 align-top xl:w-40 xl:mr-3"
                       >
                         Login
                       </Button>
                       <Button
                         variant="outline-secondary"
-                        className="w-full px-4 py-3 mt-3 align-top xl:w-32 xl:mt-0"
+                        className="w-full px-4 py-3 mt-3 align-top xl:w-40 xl:mt-0"
+                        onClick={() => navigate('/register')}
                       >
-                        Register
+                        Daftar Akun
                       </Button>
                       
                       <button 

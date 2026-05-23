@@ -16,16 +16,20 @@ const DetailPenjualan = () => {
     const navigate = useNavigate();
     const params = useParams();
     const dispatch = useAppDispatch()
+    const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
+
      //panggil url
     const no_penjualan = params.no_penjualan;
-    // const penjualanSelect = useAppSelector(state=>state.TransaksiSlice.transaksi).find(index=>index.no_penjualan === no_penjualan);
 
     const penjualanSelect = useAppSelector(state=>state.TransaksiSlice.transaksiDetailById);
       useEffect(()=>{
-        if(no_penjualan){
-            dispatch(TransaksiGetItem(no_penjualan));
+        // BUG FIX: Sertakan activeStoreId agar mematuhi Aturan #3 (Multi-Tenant)
+        if(no_penjualan && activeStoreId){
+            // Gunakan string interpolation untuk menggabungkan ID dan Query Param 
+            // Ini mencegah munculnya [object Object] di URL
+            dispatch(TransaksiGetItem(`${no_penjualan}?id_store=${activeStoreId}` as any));
         }
-      },[dispatch,no_penjualan]);
+      },[dispatch, no_penjualan, activeStoreId]);
 
 
     const [selectId,setSelectId] = useState<string>('');
@@ -39,8 +43,15 @@ const DetailPenjualan = () => {
     }, [penjualanSelect]);
 
     const submitPembatalan = async() =>{
+      if (!activeStoreId) return toast.error("ID Toko tidak ditemukan");
+
       try {
-        await dispatch(pembelianBatal({id:selectId,alasan_void:alasanPembatalan})).unwrap();
+        // Aturan #2: Setiap aksi database wajib menyertakan id_store
+        await dispatch(pembelianBatal({
+            id: selectId, 
+            alasan_void: alasanPembatalan, 
+            id_store: activeStoreId 
+        } as any)).unwrap();
         toast.success('Transaksi Pembelian Berhasil Diinput'); 
         setBatalkanPembelianConfirm(false);
         navigate(-1)
@@ -118,12 +129,13 @@ const DetailPenjualan = () => {
             </div>
             <div className="col-span-12 sm:col-span-6">
               <FormLabel htmlFor="nama_kategori">tanggal Transaksi</FormLabel>
-            <FormInput
+              <FormInput
                 id="no_pembelian"
                 type="text"
                 className="w-full"
                 placeholder="Input text"
-                value={new Date(penjualanSelect?.tgl_penjualan || '').toLocaleString('id-ID',{day:"2-digit",month:'numeric',year:'numeric'})}
+                // Aturan #8: Defensive programming untuk penanganan data tanggal agar tidak Invalid Date
+                value={penjualanSelect?.tgl_penjualan ? new Date(penjualanSelect.tgl_penjualan).toLocaleString('id-ID', { day: "2-digit", month: 'numeric', year: 'numeric' }) : '-'}
                 readOnly
               />
             </div>

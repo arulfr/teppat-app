@@ -27,7 +27,7 @@ const RootApp = () => {
   return (
     <>
       <Router />
-      {isLogin && <ChatWidget />}
+      {isLogin?.token && <ChatWidget />}
       <SessionExpiredModal isOpen={showModal} onLoginAgain={handleLoginAgain} />
     </>
   );
