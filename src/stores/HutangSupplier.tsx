@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/stores/hooks";
 import { getAccountPayables } from "@/stores/AccountPayableSlice";
 import Table from "@/components/Base/Table";
@@ -20,10 +20,13 @@ const HutangSupplier = () => {
     }
   }, [dispatch, activeStoreId, filterStatus]);
 
-  const filteredList = list.filter((item) =>
-    item.no_faktur.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id_supplier?.nama_supplier.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Aturan #8: Gunakan useMemo dan defensive check (list || []) untuk mencegah crash
+  const filteredList = useMemo(() => {
+    return (list || []).filter((item) =>
+      item.no_faktur.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id_supplier?.nama_supplier.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [list, searchTerm]);
 
   return (
     <div className="mt-5">

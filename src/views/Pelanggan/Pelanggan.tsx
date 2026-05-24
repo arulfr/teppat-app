@@ -1,6 +1,6 @@
 import Button from '@/components/Base/Button'
 import Lucide from '@/components/Base/Lucide'
-import React, { ChangeEvent, useEffect, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState, useMemo } from 'react'
 import SearchPages from '../Components/SearchPages'
 import Table from '@/components/Base/Table'
 import { Menu } from '@/components/Base/Headless'
@@ -11,12 +11,16 @@ import DeleteDialog from '../Components/DeleteDialog'
 import PelangganAdd from './PelangganAdd'
 import PelangganEdit from './PelangganEdit'
 import { toast } from 'react-toastify'
+import { IPelanggan } from '@/utils/types'
 
 
 const Pelanggan = () => {
 
         const dispatch = useAppDispatch();
-        const pelanggan = useAppSelector(state=>state.PelangganSlice.pelanggan);
+
+        const pelanggan = useAppSelector(state => state.PelangganSlice.pelanggan);
+
+        const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
         const [selectId,setSelectId] = useState('');
         const [buttonAddModal,setButtonAddModal] = useState(false);
         const [pelangganEditModal,setPelangganEditModal] = useState(false);
@@ -45,15 +49,26 @@ const Pelanggan = () => {
         }
     
         useEffect(()=>{
-          dispatch(pelangganGet());
-        },[]);
+          // Aturan #3: Pastikan fetch hanya jika id_store tersedia
+          if (activeStoreId) {
+              dispatch(pelangganGet());
+          }
+        },[dispatch, activeStoreId]);
     
     
         //======== search =========
     
-        const filterSearch = pelanggan.filter((item)=>
-            JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        // DEBUG: Pantau isi state pelanggan di Console (Hapus jika sudah lancar)
+        useEffect(() => {
+            
+        }, [pelanggan]);
+
+        // Aturan #8: Gunakan useMemo dan defensive check (pelanggan || [])
+        const filterSearch = useMemo(() => {
+            return (pelanggan || []).filter((item: IPelanggan) =>
+                JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }, [pelanggan, searchQuery]);
     
         const handleSearchChange = (e:ChangeEvent<HTMLInputElement>)=>{
           setSearchQuery(e.target.value);
@@ -65,10 +80,15 @@ const Pelanggan = () => {
         const [currentPage,setCurrentPage] = useState(1);
         const [perPages,setPerPages] = useState(10);
     
-        const totalPages = Math.ceil(filterSearch.length/perPages);
-        const angkaAkhir = currentPage * perPages;
-        const angkaAwal = angkaAkhir - perPages;
-        const currentPelanggan = filterSearch.slice(angkaAwal,angkaAkhir);
+        // Aturan #8: Gunakan useMemo untuk kalkulasi pagination agar performa tetap ringan
+        const { currentPelanggan, totalPages, angkaAwal, angkaAkhir } = useMemo(() => {
+            const total = Math.ceil(filterSearch.length / perPages);
+            const akhir = currentPage * perPages;
+            const awal = akhir - perPages;
+            const sliced = filterSearch.slice(awal, akhir);
+            
+            return { currentPelanggan: sliced, totalPages: total, angkaAwal: awal, angkaAkhir: akhir };
+        }, [filterSearch, currentPage, perPages]);
     
         //======== pagination ========
         const handlePageChange = (page:number)=>{
@@ -89,7 +109,7 @@ const Pelanggan = () => {
             <Lucide icon="Plus" className="w-4 h-4 mr-2" /> Add Pelanggan
           </Button>
           <div className="hidden mx-auto md:block text-slate-500">
-              Showing {angkaAwal + 1} to {Math.min(angkaAkhir, currentPelanggan.length)} of {currentPelanggan.length} entries
+              Showing {currentPelanggan.length === 0 ? 0 : angkaAwal + 1} to {Math.min(angkaAkhir, filterSearch.length)} of {filterSearch.length} entries
           </div>
         {/*  Begin : Search */}
           <SearchPages searchQuery={searchQuery} handleSearchChange={handleSearchChange} />
@@ -118,11 +138,10 @@ const Pelanggan = () => {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-            {currentPelanggan.map((item,index)=>{
-              return(
+              {currentPelanggan.map((item: IPelanggan, index: number) => (
                <Table.Tr key={item._id || index} className="intro-x">
-                  <Table.Td className="first:rounded-l-md last:rounded-r-md w-40 bg-white border-b-0 dark:bg-darkmode-600 shadow-[20px_3px_20px_#0000000b]">
-                    {angkaAwal +index + 1}
+                  <Table.Td className="first:rounded-l-md last:rounded-r-md w-10 bg-white border-b-0 dark:bg-darkmode-600 shadow-[20px_3px_20px_#0000000b]">
+                    {angkaAwal + index + 1}
                   </Table.Td>
                   <Table.Td className="first:rounded-l-md last:rounded-r-md bg-white border-b-0 dark:bg-darkmode-600 shadow-[20px_3px_20px_#0000000b]">
                     {item.nama_pelanggan}
@@ -160,8 +179,7 @@ const Pelanggan = () => {
                     </div>
                   </Table.Td>
                 </Table.Tr>
-              )
-            })}
+              ))}
             </Table.Tbody>
           </Table>
         </div>
@@ -178,7 +196,11 @@ const Pelanggan = () => {
       {/* pelanggan Add */}
       <PelangganAdd pelangganAddModal={buttonAddModal} setPelangganAddModal={setButtonAddModal} />
       {/* End Supplier Add*/}
-      <PelangganEdit pelangganEditModal={pelangganEditModal} setPelangganEditModal={setPelangganEditModal} selectId={selectId} />
+      
+      {/* BUG FIX: Hanya render PelangganEdit jika modal dibuka untuk mencegah crash '.find' pada data undefined */}
+      {pelangganEditModal && (
+        <PelangganEdit pelangganEditModal={pelangganEditModal} setPelangganEditModal={setPelangganEditModal} selectId={selectId} />
+      )}
       </div>
     </>
   )

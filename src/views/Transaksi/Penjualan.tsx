@@ -1,6 +1,6 @@
 import Button from '@/components/Base/Button'
 import Lucide from '@/components/Base/Lucide'
-import React, { ChangeEvent, useEffect, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState, useMemo } from 'react'
 import SearchPages from '../Components/SearchPages'
 import Table from '@/components/Base/Table'
 import { Menu } from '@/components/Base/Headless'
@@ -50,9 +50,12 @@ const Penjualan = () => {
     
         //======== search =========
     
-        const filterSearch = (transaksi || []).filter((item)=>
-            JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        // Aturan #8: Gunakan useMemo dan defensive check agar performa optimal
+        const filterSearch = useMemo(() => {
+            return (transaksi || []).filter((item) =>
+                JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }, [transaksi, searchQuery]);
     
         const handleSearchChange = (e:ChangeEvent<HTMLInputElement>)=>{
           setSearchQuery(e.target.value);

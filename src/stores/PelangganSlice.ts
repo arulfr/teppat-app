@@ -55,10 +55,10 @@ const PelangganSlice = createSlice({
     extraReducers: (builder) => {
         // Define your extra reducers here
         builder.addCase(pelangganGet.fulfilled, (state, action) => {
-            state.pelanggan = action.payload.data;
+            state.pelanggan = action.payload; // Pastikan tidak ada .data di sini
         });
         builder.addCase(pelangganPost.fulfilled, (state, action) => {
-            state.pelanggan.push(action.payload);
+            state.pelanggan.push(action.payload); // Ambil objek pelanggan langsung
         });
         builder.addCase(pelangganUpdate.fulfilled, (state, action) => {
             const index = state.pelanggan.findIndex(pel => pel._id === action.payload._id);
