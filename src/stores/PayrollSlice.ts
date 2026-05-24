@@ -63,7 +63,7 @@ const payrollSlice = createSlice({
       })
       .addCase(generatePayroll.fulfilled, (state, action) => {
         state.loading = false;
-        state.lastGenerated = action.payload.data;
+        state.lastGenerated = action.payload;
       })
       .addCase(generatePayroll.rejected, (state, action) => {
         state.loading = false;

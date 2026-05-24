@@ -14,7 +14,13 @@ const StockBatch = () => {
   const dispatch = useAppDispatch();
   
   // Mengambil data dari Redux Store (Pastikan Slice sudah dibuat)
-  const stockBatches = useAppSelector((state) => state.StockBatch.stockBatches) || []
+  // BUG FIX: Gunakan mapping fleksibel untuk menangani data kosong atau terbungkus
+  const stockBatchesRaw = useAppSelector((state) => state.StockBatch.stockBatches);
+  const stockBatches = useMemo(() => {
+    if (Array.isArray(stockBatchesRaw)) return stockBatchesRaw;
+    return (stockBatchesRaw as any)?.data || [];
+  }, [stockBatchesRaw]);
+
   const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
   
   const [searchQuery, setSearchQuery] = useState('')
