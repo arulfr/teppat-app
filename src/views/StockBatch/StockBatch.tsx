@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/stores/hooks'
 import { getStockBatches } from '@/stores/StockBatchSlice';
@@ -15,22 +15,26 @@ const StockBatch = () => {
   
   // Mengambil data dari Redux Store (Pastikan Slice sudah dibuat)
   const stockBatches = useAppSelector((state) => state.StockBatch.stockBatches) || []
+  const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
   
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [perPages, setPerPages] = useState(10)
 
   useEffect(() => {
-    // Dispatch action untuk mengambil data batch dari backend
-    if (typeof getStockBatches === 'function') {
+    // Aturan #3: Pastikan fetch hanya jika activeStoreId tersedia
+    if (activeStoreId && typeof getStockBatches === 'function') {
         dispatch(getStockBatches())
     }
-  }, [dispatch])
+  }, [dispatch, activeStoreId])
 
   // Fitur Pencarian Global
-  const filterSearch = stockBatches.filter((item: any) =>
-    JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Aturan #8: Gunakan useMemo dan defensive check (stockBatches || [])
+  const filterSearch = useMemo(() => {
+    return (stockBatches || []).filter((item: any) =>
+      JSON.stringify(item).toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [stockBatches, searchQuery]);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -38,10 +42,15 @@ const StockBatch = () => {
   }
 
   // Logika Paginasi
-  const totalPages = Math.ceil(filterSearch.length / perPages)
-  const angkaAkhir = currentPage * perPages
-  const angkaAwal = angkaAkhir - perPages
-  const currentData = filterSearch.slice(angkaAwal, angkaAkhir)
+  // Aturan #8: Gunakan useMemo untuk kalkulasi pagination agar performa tetap ringan
+  const { currentData, totalPages, angkaAwal, angkaAkhir } = useMemo(() => {
+    const total = Math.ceil(filterSearch.length / perPages);
+    const akhir = currentPage * perPages;
+    const awal = akhir - perPages;
+    const sliced = filterSearch.slice(awal, akhir);
+    
+    return { currentData: sliced, totalPages: total, angkaAwal: awal, angkaAkhir: akhir };
+  }, [filterSearch, currentPage, perPages]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -93,7 +102,7 @@ const StockBatch = () => {
             </Menu.Items>
           </Menu>
           <div className="hidden mx-auto md:block text-slate-500">
-             Showing {filterSearch.length === 0 ? 0 : angkaAwal + 1} to {Math.min(angkaAkhir, filterSearch.length)} of {filterSearch.length} entries
+             Showing {(stockBatches || []).length === 0 ? 0 : angkaAwal + 1} to {Math.min(angkaAkhir, filterSearch.length)} of {filterSearch.length} entries
           </div>
           <div className="w-full mt-3 sm:w-auto sm:ml-auto md:ml-0">
             <SearchPages searchQuery={searchQuery} handleSearchChange={handleSearchChange} />
@@ -115,7 +124,8 @@ const StockBatch = () => {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {currentData.map((item: any, index: number) => (
+              {currentData.length > 0 ? (
+                currentData.map((item: any, index: number) => (
                 <Table.Tr key={item._id} className="intro-x">
                   <Table.Td className="bg-white border-b-0 dark:bg-darkmode-600 shadow-[20px_3px_20px_#0000000b] first:rounded-l-md last:rounded-r-md">
                     {angkaAwal + index + 1}
@@ -147,7 +157,17 @@ const StockBatch = () => {
                     </div>
                   </Table.Td>
                 </Table.Tr>
-              ))}
+                ))
+              ) : (
+                <Table.Tr>
+                  <Table.Td colSpan={8} className="text-center py-10 bg-white dark:bg-darkmode-600 rounded-md">
+                    <div className="flex flex-col items-center text-slate-500 italic">
+                      <Lucide icon="Search" className="w-8 h-8 mb-2 opacity-20" />
+                      {(stockBatches || []).length === 0 ? "Belum ada data batch stok." : "Batch stok tidak ditemukan."}
+                    </div>
+                  </Table.Td>
+                </Table.Tr>
+              )}
             </Table.Tbody>
           </Table>
         </div>

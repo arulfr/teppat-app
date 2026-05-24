@@ -16,6 +16,8 @@ import { toast } from 'react-toastify'
 const StokLaporan = () => {
   const dispatch = useAppDispatch()
   const kartuStok = useAppSelector(state => state.KartuStokSlice.kartu_stok) as unknown as kartuStok[]
+  const { activeStoreId } = useAppSelector((state) => state.AdminSlice);
+
   const [searchQuery, setSearchQuery] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -23,10 +25,11 @@ const StokLaporan = () => {
   const [perPages, setPerPages] = useState(10)
 
   const fetchData = useCallback(() => {
+    if (!activeStoreId) return; // Aturan #3: Pastikan ID Toko tersedia
     const params: FilterParams | undefined = startDate && endDate ? { startDate, endDate } : undefined
     dispatch(kartuStokget(params))
     setCurrentPage(1)
-  }, [dispatch, startDate, endDate])
+  }, [dispatch, startDate, endDate, activeStoreId])
 
   useEffect(() => {
     fetchData()
@@ -63,19 +66,26 @@ const StokLaporan = () => {
   }
 
   const filteredData = useMemo(() => {
-    return kartuStok.filter((item) => 
-      item.nama_barang.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.keterangan.toLowerCase().includes(searchQuery.toLowerCase())
+    // Aturan #8: Defensive check (kartuStok || []) untuk mencegah crash .filter()
+    return (kartuStok || []).filter((item) => 
+      (item.nama_barang || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.keterangan || "").toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [kartuStok, searchQuery])
 
-  const totalMasuk = filteredData.reduce((sum, item) => sum + (item.jumlah_stok_masuk || 0), 0)
-  const totalKeluar = filteredData.reduce((sum, item) => sum + (item.jumlah_stok_keluar || 0), 0)
-  const totalStokAkhir = filteredData.reduce((sum, item) => sum + (item.stok_akhir || 0), 0)
-  const totalPages = Math.ceil(filteredData.length / perPages)
-  const angkaAkhir = currentPage * perPages
-  const angkaAwal = angkaAkhir - perPages
-  const currentData = filteredData.slice(angkaAwal, angkaAkhir)
+  // Aturan #8: Optimasi performa kalkulasi pagination dan KPI menggunakan useMemo
+  const { currentData, totalPages, angkaAwal, angkaAkhir, totalMasuk, totalKeluar, totalStokAkhir } = useMemo(() => {
+    const total = Math.ceil(filteredData.length / perPages);
+    const akhir = currentPage * perPages;
+    const awal = akhir - perPages;
+    const sliced = filteredData.slice(awal, akhir);
+
+    const msk = filteredData.reduce((sum, item) => sum + (item.jumlah_stok_masuk || 0), 0);
+    const klr = filteredData.reduce((sum, item) => sum + (item.jumlah_stok_keluar || 0), 0);
+    const akr = (filteredData.length > 0) ? filteredData[0].stok_akhir : 0; // Stok akhir biasanya diambil dari baris terbaru
+
+    return { currentData: sliced, totalPages: total, angkaAwal: awal, angkaAkhir: akhir, totalMasuk: msk, totalKeluar: klr, totalStokAkhir: akr };
+  }, [filteredData, currentPage, perPages]);
 
   const dataExport = () => {
     return filteredData.map((item, index: number) => ({
@@ -255,4 +265,3 @@ const StokLaporan = () => {
 }
 
 export default StokLaporan
-
