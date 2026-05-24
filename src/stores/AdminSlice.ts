@@ -14,7 +14,9 @@ let supplierId !: Supplier;
 
 export const LoginAdmin = createAsyncThunk('admin/loginAdmin',async(login:{username:string,password:string},thunkAPI)=>{
     try {
-        const res = await axiosInstance.post(`/admin/login`,qs.stringify(login));
+        // BUG FIX: Gunakan endpoint /login untuk POS User (Owner/Staff). 
+        // Endpoint /admin/login (AdminController) ditujukan untuk panel pengelola SaaS.
+        const res = await axiosInstance.post(`/login`,qs.stringify(login));
         return res.data;
     } catch (error: any) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Email atau password salah");

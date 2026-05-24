@@ -113,10 +113,25 @@ const Login = () => {
 
   const loginHandle = async () => {
       try {
-        const result = await dispatch(LoginAdmin(loginState)).unwrap();
-        if (result && result.token) {
-        toast.success('Login successful');
-          navigate('/');
+        const response = await dispatch(LoginAdmin(loginState)).unwrap();
+        
+        if (response && response.token) {
+          // BUG FIX: Simpan kredensial ke localStorage segera agar bisa dibaca oleh Authenticator & Axios Interceptor
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('username', response.username || '');
+          localStorage.setItem('kode_user', response.kode_user || '');
+          localStorage.setItem('_id', response._id || '');
+          localStorage.setItem('role', response.role || '');
+          localStorage.setItem('id_store', response.id_store || '');
+          if (response.access_menu) localStorage.setItem('access_menu', JSON.stringify(response.access_menu));
+          if (response.tipe_bisnis) localStorage.setItem('tipe_bisnis', response.tipe_bisnis);
+
+          // BUG FIX: Gunakan timer (delay) 100ms agar localStorage & Redux State stabil 
+          // sebelum pindah ke Dashboard yang langsung memicu request API.
+          setTimeout(() => {
+            toast.success('Login Berhasil');
+            navigate('/');
+          }, 100);
         }
       } catch (error:string | any) {
           toast.error(error,{
