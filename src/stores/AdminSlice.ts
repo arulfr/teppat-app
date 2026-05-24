@@ -170,7 +170,8 @@ const AdminSlice = createSlice({
             available_stores: [],
             subscription_plan: 'free',
             subscription_status: 'trial',
-            subscription_expiry: null
+            subscription_expiry: null,
+            tipe_bisnis: null
         } as Ilogin,
     },
     reducers:{

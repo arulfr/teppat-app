@@ -31,9 +31,19 @@ const Login = () => {
     const urlUsername = queryParams.get('user');
     const urlKodeUser = queryParams.get('kode');
     const urlId = queryParams.get('_id');
+    const urlTipeBisnis = queryParams.get('tipe_bisnis');
 
     // Hanya jalankan auto-login jika parameter lengkap dan reg_type adalah manual
     if (token && urlUsername && urlKodeUser && urlId && regType === 'manual') {
+      // BUG FIX: Wajib simpan ke localStorage agar Authenticator tidak melakukan logout otomatis
+      localStorage.setItem('token', token);
+      localStorage.setItem('username', urlUsername);
+      localStorage.setItem('kode_user', urlKodeUser);
+      localStorage.setItem('_id', urlId);
+      localStorage.setItem('role', 'owner');
+      localStorage.setItem('access_menu', JSON.stringify(['dashboard', 'master-data'])); // Default minimal
+      if (urlTipeBisnis) localStorage.setItem('tipe_bisnis', urlTipeBisnis);
+
       // Melakukan dispatch langsung agar Redux State terisi.
       dispatch(setAutoLogin({ 
         token, 
@@ -45,14 +55,17 @@ const Login = () => {
         available_stores: [],
         subscription_plan: 'free',
         subscription_status: 'trial',
-        subscription_expiry: null
+        subscription_expiry: null,
+        tipe_bisnis: urlTipeBisnis || 'pending'
       }));
 
-      toast.success('Login otomatis berhasil! Selamat datang.');
-      
-      // Arahkan ke wizard untuk melengkapi data bisnis
-      // Gunakan replace: true agar user tidak bisa back ke halaman login dengan parameter lama
-      navigate(`/wizard_form?reg_type=manual&nama_bisnis=${queryParams.get('nama_bisnis')}&alamat=${queryParams.get('alamat')}`);
+      // BUG FIX: Berikan sedikit jeda (100ms) agar localStorage tersinkronisasi 
+      // dan Redux state benar-benar settle sebelum navigasi ke halaman yang memicu request API.
+      setTimeout(() => {
+        toast.success('Login otomatis berhasil! Selamat datang.');
+        const nextUrl = `/wizard_form?reg_type=manual&nama_bisnis=${encodeURIComponent(queryParams.get('nama_bisnis') || '')}&alamat=${encodeURIComponent(queryParams.get('alamat') || '')}&tipe_bisnis=${urlTipeBisnis || ''}`;
+        navigate(nextUrl, { replace: true });
+      }, 100);
       return;
     }
 

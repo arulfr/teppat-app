@@ -28,7 +28,12 @@ const WizardForm = () => {
     }
   }, [stores, navigate]);
   
-  const [step, setStep] = useState(1);
+  // UPGRADE: Jika data sudah dibawa dari registrasi manual, langsung arahkan ke Step 2 (Layout Struk)
+  const [step, setStep] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return (params.get('nama_bisnis') && params.get('reg_type') === 'manual') ? 2 : 1;
+  });
+
 
   // UPGRADE: Gunakan fungsi inisialisasi agar state hanya terbentuk sekali saat mount
   // Ini jauh lebih aman daripada menggunakan useEffect untuk 'sync' data URL
@@ -39,7 +44,7 @@ const WizardForm = () => {
     header_struk: '',
     footer_struk: '',
     id_owner: owner._id as string, // Pastikan id_owner terisi dari awal
-    tipe_bisnis: owner.tipe_bisnis === 'pending' ? '' : (owner.tipe_bisnis || ''),
+    tipe_bisnis: (new URLSearchParams(location.search).get('tipe_bisnis')) || (owner.tipe_bisnis !== 'pending' ? owner.tipe_bisnis : ''),
     reg_type: new URLSearchParams(location.search).get('reg_type') || ''
   });
 
@@ -164,7 +169,7 @@ const WizardForm = () => {
                     <FormLabel htmlFor="tipe-bisnis">Tipe Bisnis</FormLabel>
                     <FormSelect
                       id="tipe-bisnis"
-                      value={storeData.tipe_bisnis}
+                      value={storeData.tipe_bisnis ?? ""}
                       onChange={(e) => setStoreData({ ...storeData, tipe_bisnis: e.target.value })}
                     >
                       <option value="">-- Pilih Tipe Bisnis --</option>
