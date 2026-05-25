@@ -36,8 +36,9 @@ const PaymentConfirmation = () => {
 
     // Contoh data dummy jika API belum siap:
     setPaymentMethods([
-      { provider: 'BCA', nomor: '8830-221-111', atas_nama: 'PT. TEKKAT APLIKASI INDONESIA' },
-      { provider: 'DANA', nomor: '08123456789', atas_nama: 'TEKKAT ADMIN' }
+      { provider: 'BNI', nomor: '0255233003', atas_nama: 'MUHAMAD AMBRULLAH FERIANY' },
+      { provider: 'DANA', nomor: '081349490813', atas_nama: 'MUHAMAD AMBRULLAH FERIANY' },
+      { provider: 'GOPAY', nomor: '081349490813', atas_nama: 'MUHAMAD AMBRULLAH FERIANY' },
     ]);
   }, [dispatch]);
 
@@ -64,7 +65,7 @@ const PaymentConfirmation = () => {
       `Paket: ${order.paket_tujuan} (${order.durasi})\n` +
       `Total Transfer: Rp ${order.total_harga.toLocaleString('id-ID')}`
     );
-    window.open(`https://wa.me/628123456789?text=${text}`, '_blank');
+    window.open(`https://wa.me/081349490813?text=${text}`, '_blank');
   };
 
   // Render Loading dengan Spinner yang konsisten dengan tema Enigma
