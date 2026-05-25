@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/stores/hooks';
 import { createBillingOrder } from '@/stores/BillingSlice';
 import { getPricingPlans, IPricingPlan } from '@/stores/PricingSlice';
 import { Check, Zap, Rocket, Crown } from 'lucide-react';
+import { resetLogin } from '@/stores/AdminSlice';
 import Swal from 'sweetalert2';
 
 // Data Paket (Best Practice: Bisa dipindah ke file konstanta)
@@ -45,8 +46,24 @@ const PaketSelect = ({ onClose }: { onClose?: () => void }) => {
 
       } else {
         // Tampilkan pesan error dari backend jika request ditolak (Rejection)
-        const errorMsg = (result.payload as string) || 'Gagal membuat pesanan';
-        Swal.fire('Gagal', errorMsg, 'error');
+        const errorMsg = String(result.payload || 'Gagal membuat pesanan');
+        
+        if (errorMsg.includes('User tidak ditemukan') || errorMsg.includes('Akses ditolak')) {
+            Swal.fire({
+                title: 'Sesi Bermasalah',
+                text: 'Akun Anda tidak dikenali oleh server atau sesi telah berakhir. Silakan login ulang untuk melanjutkan.',
+                icon: 'warning',
+                confirmButtonText: 'Login Ulang',
+                confirmButtonColor: '#1e293b'
+            }).then(() => {
+                // Bersihkan sesi dan arahkan ke login
+                localStorage.clear();
+                dispatch(resetLogin());
+                navigate('/login');
+            });
+        } else {
+            Swal.fire('Gagal', errorMsg, 'error');
+        }
       }
     } catch (error: any) {
       Swal.fire('Gagal', 'Terjadi kesalahan sistem', 'error');
